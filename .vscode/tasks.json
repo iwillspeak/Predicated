@@ -44,6 +44,22 @@ n          "/consoleloggerparameters:NoSummary"
         "reveal": "silent"
       },
       "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "format",
+      "command": "dotnet",
+      "type": "shell",
+      "args": [
+        "tool",
+        "run",
+        "fantomas",
+        "-r",
+        "${workspaceRoot}",
+      ],
+      "presentation": {
+        "reveal": "silent"
+      },
+      "problemMatcher": "$msCompile"
     }
   ]
 }
