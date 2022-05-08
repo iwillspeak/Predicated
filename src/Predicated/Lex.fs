@@ -1,6 +1,7 @@
 module Predicated.Lex
 
 open System
+open System.Text
 
 type public TokenKind =
     | Error = 0
