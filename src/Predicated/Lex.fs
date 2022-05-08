@@ -73,16 +73,21 @@ let public tokenise input =
         | _ -> None
 
     let mutable state = Start
+    let mutable lexeme = StringBuilder()
 
     seq {
         for char in input do
             match nextState char state with
             | None ->
-                yield tokenForState state
+                yield (lexeme.ToString(), tokenForState state)
                 // HAXX: Assume we always return some state for start transitions
+                lexeme <- lexeme.Clear()
+                    .Append(char)
                 state <- (nextState char Start).Value
-            | Some next -> state <- next
+            | Some next ->
+                state <- next
+                lexeme <- lexeme.Append(char)
 
         if state <> State.Start then
-            yield tokenForState state
+            yield (lexeme.ToString(), tokenForState state)
     }

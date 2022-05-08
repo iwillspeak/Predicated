@@ -21,13 +21,14 @@ open Xunit
 [<InlineData("c3p0", TokenKind.Ident)>]
 // TODO: number and date literals
 let ``tokenise simple lexemes`` input expected =
-    let token = input |> tokenise |> Seq.exactlyOne
+    let (lexeme, kind) = input |> tokenise |> Seq.exactlyOne
 
-    Assert.Equal(expected, token)
+    Assert.Equal(expected, kind)
+    Assert.Equal(input, lexeme)
 
 [<Fact>]
 let ``tokenise multiple tokens`` () =
-    let tokens = "123(3)" |> tokenise |> Array.ofSeq
+    let tokens = "123(3)" |> tokenise |> Seq.map (fun (_, b) -> b) |> Array.ofSeq
 
     Assert.Equal(
         [ TokenKind.Number

@@ -9,11 +9,16 @@ type SyntaxKind =
     | ERR = -1
 
     // NODES
-    | PROGRAM = 0
-    | EXPR = 1
+    | QUERY = 0
+    | CLAUSE = 1
+    | LITERAL = 2
+    | GROUP = 3
 
     // TOKENS
     | SPACE = 100
+    | NUMBER = 101
+    | OPEN_PAREN = 102
+    | CLOSE_PAREN = 103
 
 module SyntaxKinds =
 
@@ -52,7 +57,7 @@ module ParseResponse =
 
 type private ParserState =
     { Diagnostics: Diagnostic list
-      Tokens: TokenKind list }
+      Tokens: (string * TokenKind) list }
 
 module private ParserState =
     let public fromTokens tokens = { Tokens = tokens; Diagnostics = [] }
@@ -60,29 +65,68 @@ module private ParserState =
     let public withDiagnostic state diagnostic =
         { state with ParserState.Diagnostics = (diagnostic :: state.Diagnostics) }
 
+    let public bump state =
+        (List.head state.Tokens, { state with Tokens = List.tail state.Tokens })
+
+let private currentKind state =
+    let (_, kind) = List.head state.Tokens
+    kind
+
+let private lookingAt kind state =
+    match List.tryHead state.Tokens with
+    | Some (_, k) when k = kind -> true
+    | _ -> false
+
 let private eat (builder: GreenNodeBuilder) kind state =
-    let token = List.head state.Tokens
-    builder.Token(kind |> SyntaxKinds.astToGreen, "<FIXME>")
-    { state with Tokens = List.tail state.Tokens }
+    let (lexeme, _), state = ParserState.bump state
+    builder.Token(kind |> SyntaxKinds.astToGreen, lexeme)
+    state
+
+let private expect (builder: GreenNodeBuilder) tokenKind syntaxKind state =
+    if lookingAt tokenKind state then
+        eat builder syntaxKind state
+    else
+        sprintf "Expected %A" tokenKind
+        |> Diagnostic
+        |> ParserState.withDiagnostic state
 
 let private skipWs (builder: GreenNodeBuilder) state =
-    match state.Tokens |> List.tryHead with
-    | Some (TokenKind.Space) -> eat builder SyntaxKind.SPACE state
-    | _ -> state
+    if lookingAt TokenKind.Space state then
+        eat builder SyntaxKind.SPACE state
+    else 
+        state
 
-let private parseExpression builder state =
-    match state.Tokens |> List.head with
+let rec private parseClause (builder: GreenNodeBuilder) state =
+    match currentKind state with
+    | TokenKind.Number ->
+        builder.StartNode(SyntaxKind.LITERAL |> SyntaxKinds.astToGreen)
+        let state = eat builder SyntaxKind.NUMBER state
+        builder.FinishNode()
+        state
+    | TokenKind.OpenParen ->
+        builder.StartNode(SyntaxKind.GROUP |> SyntaxKinds.astToGreen)
+        let state = eat builder SyntaxKind.OPEN_PAREN state
+
+        let state = eat builder SyntaxKind.CLOSE_PAREN state
+        builder.FinishNode()
+        state
     // TODO: Other expression types here...
     | _ -> eat builder SyntaxKind.ERR state
+and private parseClauseLed (builder: GreenNodeBuilder) state =
+    // FIXME: sort this out
+    state
+and private parseClauseNud (builder: GreenNodeBuilder) state =
+    // FIXME: Sort this out
+    state
 
-let rec private parseExpressions builder state =
+let rec private parseClauses builder state =
     match state.Tokens with
     | [] -> state
     | _ ->
         state
-        |> parseExpression builder
+        |> parseClause builder
         |> skipWs builder
-        |> parseExpressions builder
+        |> parseClauses builder
 
 let public parse input =
     let tokens = input |> tokenise |> List.ofSeq
@@ -91,9 +135,9 @@ let public parse input =
     let state =
         ParserState.fromTokens tokens
         |> skipWs builder
-        |> parseExpressions builder
+        |> parseClauses builder
 
     { Tree =
-        builder.BuildRoot(SyntaxKind.PROGRAM |> SyntaxKinds.astToGreen)
+        builder.BuildRoot(SyntaxKind.QUERY |> SyntaxKinds.astToGreen)
         |> SyntaxNode.CreateRoot
       Diagnostics = state.Diagnostics }
