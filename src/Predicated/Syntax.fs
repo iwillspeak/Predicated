@@ -12,9 +12,11 @@ type public SyntaxKind =
 
     // TOKENS
     | SPACE = 100
-    | NUMBER = 101
-    | OPEN_PAREN = 102
-    | CLOSE_PAREN = 103
+    | OPEN_PAREN = 101
+    | CLOSE_PAREN = 102
+    | NUMBER = 103
+    | STRING = 104
+    | IDENT = 105
 
 module SyntaxKinds =
 

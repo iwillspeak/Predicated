@@ -1,9 +1,9 @@
-
 # Simple Data Types
 
  * `string` - `"hello world"`
  * `numbers` - `1`
- * `-2d +1w
+ * `dates` - `-2d +1w`
+ * `paths` - `title`, `author.name`, etc.
 
 # Comparison Expressions
 
@@ -17,7 +17,15 @@ created < -2d
 
 ```
 AND OR NOT
-()
+```
+
+# Grouping Expressions
+
+Query clauses can be grouped together using `(` and `)`. This allows querys to
+override the default binding precedence of operators.
+
+```
+("example" AND "stuff") OR "things"
 ```
 
 # Examples

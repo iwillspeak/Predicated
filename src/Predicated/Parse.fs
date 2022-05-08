@@ -54,13 +54,87 @@ module private ParserState =
     let public bump state =
         (List.head state.Tokens, { state with Tokens = List.tail state.Tokens })
 
+// ============================= Parser Utilities ==============================
 
+let private currentKind state =
+    let (_, kind) = List.head state.Tokens
+    kind
+
+let private lookingAt kind state =
+    match List.tryHead state.Tokens with
+    | Some (_, k) when k = kind -> true
+    | _ -> false
+
+let private eat (builder: GreenNodeBuilder) kind state =
+    let (lexeme, _), state = ParserState.bump state
+    builder.Token(kind |> SyntaxKinds.astToGreen, lexeme)
+    state
+
+let private expect (builder: GreenNodeBuilder) tokenKind syntaxKind state =
+    if lookingAt tokenKind state then
+        eat builder syntaxKind state
+    else
+        sprintf "Expected %A" tokenKind
+        |> Diagnostic
+        |> ParserState.withDiagnostic state
+
+let private skipWs (builder: GreenNodeBuilder) state =
+    if lookingAt TokenKind.Space state then
+        eat builder SyntaxKind.SPACE state
+    else 
+        state
+
+// ================================= Parsers ===================================
+
+let private parseLiteral builder state =
+    let synKind =
+        match currentKind state with
+        | TokenKind.Number -> SyntaxKind.NUMBER
+        | TokenKind.String -> SyntaxKind.STRING
+        | TokenKind.Ident -> SyntaxKind.IDENT
+        | _ -> SyntaxKind.ERR
+    eat builder synKind state
+
+let rec private parseGroupingBody builder state =
+    if state.Tokens = [] || lookingAt TokenKind.CloseParen state then
+        state
+    else
+        state
+        |> parseClause builder
+        |> skipWs builder
+        |> parseGroupingBody builder
+
+and private parseClause (builder: GreenNodeBuilder) state =
+    match currentKind state with
+    | TokenKind.OpenParen -> 
+        builder.StartNode(SyntaxKind.GROUP |> SyntaxKinds.astToGreen)
+        let state =
+            state
+            |> eat builder SyntaxKind.OPEN_PAREN
+            |> skipWs builder
+            |> parseGroupingBody builder
+            |> expect builder TokenKind.CloseParen SyntaxKind.CLOSE_PAREN
+        builder.FinishNode()
+        state
+    | _ -> parseLiteral builder state
+
+let rec private parseClauseList builder state =
+    if state.Tokens = [] then
+        state
+    else
+        state
+        |> parseClause builder
+        |> skipWs builder
+        |> parseClauseList builder
 
 // TODO: implement this parser!
-let private parseQueryBody builder state = state
+let private parseQueryBody builder state =
+    state
+    |> skipWs builder
+    |> parseClauseList builder
 
 
-
+// =============================== Public API ==================================
 
 /// Parse a Predicated Query
 ///
