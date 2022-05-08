@@ -34,7 +34,11 @@ let ``tokenise simple lexemes`` input expected =
 
 [<Fact>]
 let ``tokenise multiple tokens`` () =
-    let tokens = "123(3)" |> tokenise |> Seq.map (fun (_, b) -> b) |> Array.ofSeq
+    let tokens =
+        "123(3)"
+        |> tokenise
+        |> Seq.map (fun (_, b) -> b)
+        |> Array.ofSeq
 
     Assert.Equal(
         [ TokenKind.Number

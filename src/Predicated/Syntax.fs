@@ -6,11 +6,11 @@ type public SyntaxKind =
 
     // NODES
     | QUERY = 0
-    | CLAUSE = 1
-    | LITERAL = 2
+    | COMPARE = 1
+    | MATCH_ATOM = 2
     | GROUP = 3
-    | OPERATOR = 4
     | BOOL = 5
+    | OPERATOR = 4
 
     // TOKENS
     | SPACE = 100
@@ -21,6 +21,10 @@ type public SyntaxKind =
     | IDENT = 105
     | AND = 106
     | OR = 107
+    | GT = 108
+    | LT = 109
+    | EQ = 110
+    | LIKE = 111
 
 module SyntaxKinds =
 

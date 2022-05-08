@@ -16,4 +16,5 @@ let print result =
 
 let rec repl () = read () |> parse |> print |> repl
 
+ReadLine.HistoryEnabled <- true
 repl ()

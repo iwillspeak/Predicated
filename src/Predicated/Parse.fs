@@ -57,13 +57,13 @@ module private ParserState =
 // ============================= Parser Utilities ==============================
 
 let private currentKind state =
-    let (_, kind) = List.head state.Tokens
-    kind
-
-let private lookingAt kind state =
     match List.tryHead state.Tokens with
-    | Some (_, k) when k = kind -> true
-    | _ -> false
+    | Some (_, kind) -> kind
+    | _ -> TokenKind.EOF
+
+let private lookingAt kind state = currentKind state = kind
+
+let private lookingAtAny kinds state = List.contains (currentKind state) kinds
 
 let private eat (builder: GreenNodeBuilder) kind state =
     let (lexeme, _), state = ParserState.bump state
@@ -81,10 +81,11 @@ let private expect (builder: GreenNodeBuilder) tokenKind syntaxKind state =
 let private skipWs (builder: GreenNodeBuilder) state =
     if lookingAt TokenKind.Space state then
         eat builder SyntaxKind.SPACE state
-    else 
+    else
         state
 
-let private bindingPower = function
+let private bindingPower =
+    function
     | TokenKind.And -> 1
     | TokenKind.Or -> 2
     | _ -> 0
@@ -92,94 +93,110 @@ let private bindingPower = function
 // ================================= Parsers ===================================
 
 let private parseLiteral (builder: GreenNodeBuilder) state =
-    builder.StartNode(SyntaxKind.LITERAL |> SyntaxKinds.astToGreen)
+    builder.StartNode(SyntaxKind.MATCH_ATOM |> SyntaxKinds.astToGreen)
+
     let synKind =
         match currentKind state with
         | TokenKind.Number -> SyntaxKind.NUMBER
         | TokenKind.String -> SyntaxKind.STRING
         | TokenKind.Ident -> SyntaxKind.IDENT
         | _ -> SyntaxKind.ERR
+
     let state = eat builder synKind state
     builder.FinishNode()
     state
 
-let private parseBooleanOperator (builder: GreenNodeBuilder) kind state =
+let private parseOperator (builder: GreenNodeBuilder) kind state =
     builder.StartNode(SyntaxKind.OPERATOR |> SyntaxKinds.astToGreen)
     let state = eat builder kind state
     builder.FinishNode()
     state
 
-let rec private parseExpr (builder: GreenNodeBuilder) rbp state =
+let rec private parseClause (builder: GreenNodeBuilder) rbp state =
     let mark = builder.Mark()
-    let mutable state = parseExprNud builder state
+    let mutable state = state |> parseNud builder |> skipWs builder
 
-    while state.Tokens <> [] && (currentKind state |> bindingPower) > rbp  do
-        state <-
-            state
-            |> parseExprLed builder
+    while (currentKind state |> bindingPower) > rbp do
+        state <- state |> parseLed builder
         builder.ApplyMark(mark, SyntaxKind.BOOL |> SyntaxKinds.astToGreen)
+        state <- state |> skipWs builder
 
     state
 
-and private parseExprNud builder state = 
-    state
-    |> parseLiteral builder
-    |> skipWs builder
-
-and private parseExprLed builder state =
-
-    let tokenKnd = currentKind state
-
-    let state =
-        match tokenKnd  with
-        | TokenKind.And ->
-            parseBooleanOperator builder SyntaxKind.AND state
-        | TokenKind.Or ->
-            parseBooleanOperator builder SyntaxKind.OR state
-        | _ -> failwith "unexpected kind in parseExprLed"
-
-    state
-    |> skipWs builder
-    |> parseExpr builder (tokenKnd |> bindingPower)
-    |> skipWs builder
-
-let rec private parseGroupingBody builder state =
-    if state.Tokens = [] || lookingAt TokenKind.CloseParen state then
-        state
-    else
-        state
-        |> parseClause builder
-        |> skipWs builder
-        |> parseGroupingBody builder
-
-and private parseClause (builder: GreenNodeBuilder) state =
+and private parseNud builder state =
     match currentKind state with
-    | TokenKind.OpenParen -> 
+    | TokenKind.OpenParen ->
         builder.StartNode(SyntaxKind.GROUP |> SyntaxKinds.astToGreen)
+
         let state =
             state
             |> eat builder SyntaxKind.OPEN_PAREN
             |> skipWs builder
-            |> parseGroupingBody builder
+            |> parseClauseList builder [ TokenKind.EOF; TokenKind.CloseParen ]
             |> expect builder TokenKind.CloseParen SyntaxKind.CLOSE_PAREN
+
         builder.FinishNode()
         state
-    | _ -> parseExpr builder 0 state
+    | TokenKind.Ident ->
+        let mark = builder.Mark()
 
-let rec private parseClauseList builder state =
-    if state.Tokens = [] then
+        let state =
+            state
+            |> eat builder SyntaxKind.IDENT
+            |> skipWs builder
+
+        let infix kind =
+
+            // parse the operator node
+            let state = parseOperator builder kind state
+
+            // Then parse the operand
+            let state = state |> skipWs builder |> parseLiteral builder
+
+            builder.ApplyMark(mark, SyntaxKind.COMPARE |> SyntaxKinds.astToGreen)
+            state
+
+        match currentKind state with
+        | TokenKind.Lt -> infix SyntaxKind.LT
+        | TokenKind.Gt -> infix SyntaxKind.GT
+        | TokenKind.Equal -> infix SyntaxKind.EQ
+        | TokenKind.Like -> infix SyntaxKind.LIKE
+        | _ ->
+            builder.ApplyMark(mark, SyntaxKind.MATCH_ATOM |> SyntaxKinds.astToGreen)
+            state
+
+    | _ -> state |> parseLiteral builder
+
+and private parseLed builder state =
+
+    let tokenKnd = currentKind state
+
+    let state =
+        match tokenKnd with
+        | TokenKind.And -> parseOperator builder SyntaxKind.AND state
+        | TokenKind.Or -> parseOperator builder SyntaxKind.OR state
+        | _ -> failwith "unexpected kind in parseExprLed"
+
+    state
+    |> skipWs builder
+    |> parseClause builder (tokenKnd |> bindingPower)
+
+and private parseClauseList builder endKinds state =
+    if lookingAtAny endKinds state then
         state
     else
         state
-        |> parseClause builder
+        |> parseTopLevelCause builder
         |> skipWs builder
-        |> parseClauseList builder
+        |> parseClauseList builder endKinds
 
-// TODO: implement this parser!
+and private parseTopLevelCause (builder: GreenNodeBuilder) state = parseClause builder 0 state
+
+
 let private parseQueryBody builder state =
     state
     |> skipWs builder
-    |> parseClauseList builder
+    |> parseClauseList builder [ TokenKind.EOF ]
 
 
 // =============================== Public API ==================================
