@@ -1,8 +1,8 @@
 module ``parser tests``
 
 open Predicated.Syntax
+open Predicated.Syntax.Patterns
 open Predicated.Parse
-open Firethorn.Red.Debug
 open Xunit
 open Firethorn.Red
 
@@ -70,3 +70,16 @@ let ``checkwalk tests`` () =
           Leave SyntaxKind.MATCH_ATOM
           Leave SyntaxKind.COMPARE
           Leave SyntaxKind.QUERY ]
+
+[<Fact>]
+let ``syntax tree is traversable`` () =
+    let parsed = parse "hello and world"
+
+    match parsed.Tree with
+    | Query q ->
+        let clause = q.Clauses |> Seq.exactlyOne
+
+        match clause with
+        | Bool b -> printfn "Got a query with (%A %A %A)" b.Left b.Operator b.Right
+        | Match m -> printfn "MATCH %A" m
+    | _ -> failwith "Expected a query"
