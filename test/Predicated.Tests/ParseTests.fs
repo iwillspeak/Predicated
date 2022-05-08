@@ -1,5 +1,6 @@
 module ``parser tests``
 
+open Predicated.Syntax
 open Predicated.Parse
 open Firethorn.Red.Debug
 open Xunit

@@ -3,32 +3,7 @@ module Predicated.Parse
 open Firethorn.Red
 open Firethorn.Green
 open Predicated.Lex
-
-/// Internal Kind for Syntax Items
-type SyntaxKind =
-    | ERR = -1
-
-    // NODES
-    | QUERY = 0
-    | CLAUSE = 1
-    | LITERAL = 2
-    | GROUP = 3
-
-    // TOKENS
-    | SPACE = 100
-    | NUMBER = 101
-    | OPEN_PAREN = 102
-    | CLOSE_PAREN = 103
-
-module SyntaxKinds =
-
-    /// Convert an internal syntax kind to a raw firethorn kind
-    let public astToGreen (kind: SyntaxKind) = (int) kind |> Firethorn.SyntaxKind
-
-    /// Convert a firethorn kind back to a syntax kind
-    let public greenToAst =
-        function
-        | Firethorn.SyntaxKind k -> enum<SyntaxKind> k
+open Predicated.Syntax
 
 /// Parser Diagnostic
 ///
@@ -55,87 +30,49 @@ module ParseResponse =
         | [] -> response.Tree |> Ok
         | _ -> response.Diagnostics |> Error
 
+/// Internal Parser State
+///
+/// This record holds the state our parser will operate on. We keep the remaining
+/// tokens that have yet to be consumed, paired with the list of diagnostics we
+/// have generated up to this point.
 type private ParserState =
     { Diagnostics: Diagnostic list
       Tokens: (string * TokenKind) list }
 
 module private ParserState =
-    let public fromTokens tokens = { Tokens = tokens; Diagnostics = [] }
 
+    /// Create a new parser state from a list of tokens
+    let public fromTokens tokens =
+        { Tokens = tokens |> List.ofSeq
+          Diagnostics = [] }
+
+    /// Buffer a diagnostic into the state to track some error in the parse.
     let public withDiagnostic state diagnostic =
         { state with ParserState.Diagnostics = (diagnostic :: state.Diagnostics) }
 
+    /// Bump the token state. This will throw if called when there are no remaining tokens.
     let public bump state =
         (List.head state.Tokens, { state with Tokens = List.tail state.Tokens })
 
-let private currentKind state =
-    let (_, kind) = List.head state.Tokens
-    kind
 
-let private lookingAt kind state =
-    match List.tryHead state.Tokens with
-    | Some (_, k) when k = kind -> true
-    | _ -> false
 
-let private eat (builder: GreenNodeBuilder) kind state =
-    let (lexeme, _), state = ParserState.bump state
-    builder.Token(kind |> SyntaxKinds.astToGreen, lexeme)
-    state
+// TODO: implement this parser!
+let private parseQueryBody builder state = state
 
-let private expect (builder: GreenNodeBuilder) tokenKind syntaxKind state =
-    if lookingAt tokenKind state then
-        eat builder syntaxKind state
-    else
-        sprintf "Expected %A" tokenKind
-        |> Diagnostic
-        |> ParserState.withDiagnostic state
 
-let private skipWs (builder: GreenNodeBuilder) state =
-    if lookingAt TokenKind.Space state then
-        eat builder SyntaxKind.SPACE state
-    else 
-        state
 
-let rec private parseClause (builder: GreenNodeBuilder) state =
-    match currentKind state with
-    | TokenKind.Number ->
-        builder.StartNode(SyntaxKind.LITERAL |> SyntaxKinds.astToGreen)
-        let state = eat builder SyntaxKind.NUMBER state
-        builder.FinishNode()
-        state
-    | TokenKind.OpenParen ->
-        builder.StartNode(SyntaxKind.GROUP |> SyntaxKinds.astToGreen)
-        let state = eat builder SyntaxKind.OPEN_PAREN state
 
-        let state = eat builder SyntaxKind.CLOSE_PAREN state
-        builder.FinishNode()
-        state
-    // TODO: Other expression types here...
-    | _ -> eat builder SyntaxKind.ERR state
-and private parseClauseLed (builder: GreenNodeBuilder) state =
-    // FIXME: sort this out
-    state
-and private parseClauseNud (builder: GreenNodeBuilder) state =
-    // FIXME: Sort this out
-    state
-
-let rec private parseClauses builder state =
-    match state.Tokens with
-    | [] -> state
-    | _ ->
-        state
-        |> parseClause builder
-        |> skipWs builder
-        |> parseClauses builder
-
+/// Parse a Predicated Query
+///
+/// Tokenises the `input` and parses it as a single query. A query can be made
+/// up of any number of clauses, potentially grouped and nested.
 let public parse input =
-    let tokens = input |> tokenise |> List.ofSeq
+    let tokens = input |> tokenise
     let builder = GreenNodeBuilder()
 
     let state =
         ParserState.fromTokens tokens
-        |> skipWs builder
-        |> parseClauses builder
+        |> parseQueryBody builder
 
     { Tree =
         builder.BuildRoot(SyntaxKind.QUERY |> SyntaxKinds.astToGreen)
