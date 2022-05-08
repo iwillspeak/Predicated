@@ -6,13 +6,20 @@ open Xunit
 
 [<Theory>]
 [<InlineData("123", TokenKind.Number)>]
-// TODO: Identifier, string, and date literals
 [<InlineData("(", TokenKind.OpenParen)>]
 [<InlineData(")", TokenKind.CloseParen)>]
 [<InlineData("=", TokenKind.Equal)>]
 [<InlineData("~", TokenKind.Like)>]
 [<InlineData("<", TokenKind.Lt)>]
 [<InlineData(">", TokenKind.Gt)>]
+[<InlineData("  ", TokenKind.Space)>]
+[<InlineData("\n\r\t ", TokenKind.Space)>]
+[<InlineData("\"hello world\"", TokenKind.String)>]
+[<InlineData("\"unterminated", TokenKind.Error)>]
+[<InlineData("t", TokenKind.Ident)>]
+[<InlineData("test", TokenKind.Ident)>]
+[<InlineData("c3p0", TokenKind.Ident)>]
+// TODO: number and date literals
 let ``tokenise simple lexemes`` input expected =
     let token = input |> tokenise |> Seq.exactlyOne
 

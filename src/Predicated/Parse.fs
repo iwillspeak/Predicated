@@ -52,13 +52,12 @@ module ParseResponse =
 
 type private ParserState =
     { Diagnostics: Diagnostic list
-    ; Tokens: TokenKind list }
+      Tokens: TokenKind list }
 
 module private ParserState =
-    let public fromTokens tokens =
-        { Tokens = tokens; Diagnostics = [] }
+    let public fromTokens tokens = { Tokens = tokens; Diagnostics = [] }
 
-    let public withDiagnostic state diagnostic = 
+    let public withDiagnostic state diagnostic =
         { state with ParserState.Diagnostics = (diagnostic :: state.Diagnostics) }
 
 let private eat (builder: GreenNodeBuilder) kind state =
@@ -68,8 +67,7 @@ let private eat (builder: GreenNodeBuilder) kind state =
 
 let private skipWs (builder: GreenNodeBuilder) state =
     match state.Tokens |> List.tryHead with
-    | Some(TokenKind.Space) ->
-        eat builder SyntaxKind.SPACE state
+    | Some (TokenKind.Space) -> eat builder SyntaxKind.SPACE state
     | _ -> state
 
 let private parseExpression builder state =
@@ -82,7 +80,7 @@ let rec private parseExpressions builder state =
     | [] -> state
     | _ ->
         state
-        |> parseExpression builder 
+        |> parseExpression builder
         |> skipWs builder
         |> parseExpressions builder
 
@@ -90,10 +88,10 @@ let public parse input =
     let tokens = input |> tokenise |> List.ofSeq
     let builder = GreenNodeBuilder()
 
-    let state = 
+    let state =
         ParserState.fromTokens tokens
         |> skipWs builder
-        |> parseExpressions builder 
+        |> parseExpressions builder
 
     { Tree =
         builder.BuildRoot(SyntaxKind.PROGRAM |> SyntaxKinds.astToGreen)
