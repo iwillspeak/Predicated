@@ -18,7 +18,10 @@ type public TokenKind =
     | Gt = 9
     | Lt = 10
 
-    | Space = 11
+    | And = 11
+    | Or = 12
+
+    | Space = 100
 
 type State =
     | Start
@@ -30,14 +33,22 @@ type State =
 
 let public tokenise input =
 
-    let tokenForState =
-        function
-        | Start -> TokenKind.Error
-        | Ident -> TokenKind.Ident
-        | Space -> TokenKind.Space
-        | InNumber -> TokenKind.Number
-        | SimpleToken kind -> kind
-        | _ -> TokenKind.Error
+    let tokenForState lexeme state =
+        let kind = 
+            match state with
+            | Start -> TokenKind.Error
+            | Ident -> 
+                if String.Equals(lexeme, "and", StringComparison.OrdinalIgnoreCase) then
+                    TokenKind.And
+                else if String.Equals(lexeme, "or", StringComparison.OrdinalIgnoreCase) then
+                    TokenKind.Or
+                else
+                    TokenKind.Ident
+            | Space -> TokenKind.Space
+            | InNumber -> TokenKind.Number
+            | SimpleToken kind -> kind
+            | _ -> TokenKind.Error
+        (lexeme, kind)
 
     let nextState char =
         function
@@ -79,7 +90,7 @@ let public tokenise input =
         for char in input do
             match nextState char state with
             | None ->
-                yield (lexeme.ToString(), tokenForState state)
+                yield tokenForState (lexeme.ToString()) state
                 // HAXX: Assume we always return some state for start transitions
                 lexeme <- lexeme.Clear()
                     .Append(char)
@@ -89,5 +100,5 @@ let public tokenise input =
                 lexeme <- lexeme.Append(char)
 
         if state <> State.Start then
-            yield (lexeme.ToString(), tokenForState state)
+            yield tokenForState (lexeme.ToString()) state
     }

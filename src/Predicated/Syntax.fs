@@ -9,6 +9,8 @@ type public SyntaxKind =
     | CLAUSE = 1
     | LITERAL = 2
     | GROUP = 3
+    | OPERATOR = 4
+    | BOOL = 5
 
     // TOKENS
     | SPACE = 100
@@ -17,6 +19,8 @@ type public SyntaxKind =
     | NUMBER = 103
     | STRING = 104
     | IDENT = 105
+    | AND = 106
+    | OR = 107
 
 module SyntaxKinds =
 

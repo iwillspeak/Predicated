@@ -84,16 +84,64 @@ let private skipWs (builder: GreenNodeBuilder) state =
     else 
         state
 
+let private bindingPower = function
+    | TokenKind.And -> 1
+    | TokenKind.Or -> 2
+    | _ -> 0
+
 // ================================= Parsers ===================================
 
-let private parseLiteral builder state =
+let private parseLiteral (builder: GreenNodeBuilder) state =
+    builder.StartNode(SyntaxKind.LITERAL |> SyntaxKinds.astToGreen)
     let synKind =
         match currentKind state with
         | TokenKind.Number -> SyntaxKind.NUMBER
         | TokenKind.String -> SyntaxKind.STRING
         | TokenKind.Ident -> SyntaxKind.IDENT
         | _ -> SyntaxKind.ERR
-    eat builder synKind state
+    let state = eat builder synKind state
+    builder.FinishNode()
+    state
+
+let private parseBooleanOperator (builder: GreenNodeBuilder) kind state =
+    builder.StartNode(SyntaxKind.OPERATOR |> SyntaxKinds.astToGreen)
+    let state = eat builder kind state
+    builder.FinishNode()
+    state
+
+let rec private parseExpr (builder: GreenNodeBuilder) rbp state =
+    let mark = builder.Mark()
+    let mutable state = parseExprNud builder state
+
+    while state.Tokens <> [] && (currentKind state |> bindingPower) > rbp  do
+        state <-
+            state
+            |> parseExprLed builder
+        builder.ApplyMark(mark, SyntaxKind.BOOL |> SyntaxKinds.astToGreen)
+
+    state
+
+and private parseExprNud builder state = 
+    state
+    |> parseLiteral builder
+    |> skipWs builder
+
+and private parseExprLed builder state =
+
+    let tokenKnd = currentKind state
+
+    let state =
+        match tokenKnd  with
+        | TokenKind.And ->
+            parseBooleanOperator builder SyntaxKind.AND state
+        | TokenKind.Or ->
+            parseBooleanOperator builder SyntaxKind.OR state
+        | _ -> failwith "unexpected kind in parseExprLed"
+
+    state
+    |> skipWs builder
+    |> parseExpr builder (tokenKnd |> bindingPower)
+    |> skipWs builder
 
 let rec private parseGroupingBody builder state =
     if state.Tokens = [] || lookingAt TokenKind.CloseParen state then
@@ -116,7 +164,7 @@ and private parseClause (builder: GreenNodeBuilder) state =
             |> expect builder TokenKind.CloseParen SyntaxKind.CLOSE_PAREN
         builder.FinishNode()
         state
-    | _ -> parseLiteral builder state
+    | _ -> parseExpr builder 0 state
 
 let rec private parseClauseList builder state =
     if state.Tokens = [] then
