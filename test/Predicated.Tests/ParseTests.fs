@@ -43,7 +43,9 @@ let ``checkwalk tests`` () =
         "hello"
         [ Enter SyntaxKind.QUERY
           Enter SyntaxKind.MATCH_ATOM
+          Enter SyntaxKind.PATH
           Token(SyntaxKind.IDENT, "hello")
+          Leave SyntaxKind.PATH
           Leave SyntaxKind.MATCH_ATOM
           Leave SyntaxKind.QUERY ]
 
@@ -56,10 +58,14 @@ let ``checkwalk tests`` () =
           Leave SyntaxKind.QUERY ]
 
     checkwalk
-        "title = \"hello world\""
+        "page.title = \"hello world\""
         [ Enter SyntaxKind.QUERY
           Enter SyntaxKind.COMPARE
+          Enter SyntaxKind.PATH
+          Token(SyntaxKind.IDENT, "page")
+          Token(SyntaxKind.DOT, ".")
           Token(SyntaxKind.IDENT, "title")
+          Leave SyntaxKind.PATH
           Token(SyntaxKind.SPACE, " ")
           Enter SyntaxKind.OPERATOR
           Token(SyntaxKind.EQ, "=")

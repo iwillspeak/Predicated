@@ -132,6 +132,22 @@ let rec private parseClause (builder: GreenNodeBuilder) rbp state =
 
     state
 
+/// Parse a list of .-separated idents as a 'path'.
+and private parsePath (builder: GreenNodeBuilder) state =
+    builder.StartNode(SyntaxKind.PATH |> SyntaxKinds.astToGreen)
+
+    let mutable state = state |> eat builder SyntaxKind.IDENT
+
+    while lookingAt TokenKind.Dot state do
+        state <-
+            state
+            |> eat builder SyntaxKind.DOT
+            |> expect builder TokenKind.Ident SyntaxKind.IDENT
+
+    builder.FinishNode()
+
+    state
+
 and private parseNud builder state =
     match currentKind state with
     | TokenKind.OpenParen ->
@@ -149,10 +165,7 @@ and private parseNud builder state =
     | TokenKind.Ident ->
         let mark = builder.Mark()
 
-        let state =
-            state
-            |> eat builder SyntaxKind.IDENT
-            |> skipWs builder
+        let state = state |> parsePath builder |> skipWs builder
 
         let infix kind =
 

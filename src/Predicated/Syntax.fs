@@ -11,8 +11,9 @@ type public SyntaxKind =
     | COMPARE = 1
     | MATCH_ATOM = 2
     | GROUP = 3
-    | BOOL = 5
     | OPERATOR = 4
+    | BOOL = 5
+    | PATH = 6
 
     // TOKENS
     | SPACE = 100
@@ -27,6 +28,7 @@ type public SyntaxKind =
     | LT = 109
     | EQ = 110
     | LIKE = 111
+    | DOT = 112
 
 module SyntaxKinds =
 

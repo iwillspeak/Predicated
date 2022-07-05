@@ -21,6 +21,8 @@ type public TokenKind =
     | And = 11
     | Or = 12
 
+    | Dot = 13
+
     | Space = 100
     | EOF = 101
 
@@ -59,6 +61,7 @@ let public tokenise input =
             | c when Char.IsWhiteSpace(c) -> Some(Space)
             | c when Char.IsNumber(c) -> Some(InNumber)
             | c when Char.IsLetter(c) -> Some(Ident)
+            | '.' -> Some(SimpleToken(TokenKind.Dot))
             | '"' -> Some(InString)
             | '(' -> Some(SimpleToken(TokenKind.OpenParen))
             | ')' -> Some(SimpleToken(TokenKind.CloseParen))
