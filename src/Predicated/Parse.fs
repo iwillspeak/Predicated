@@ -102,7 +102,16 @@ let private parseLiteral (builder: GreenNodeBuilder) state =
         | TokenKind.Ident -> SyntaxKind.IDENT
         | _ -> SyntaxKind.ERR
 
-    let state = eat builder synKind state
+
+    let state =
+            if synKind = SyntaxKind.ERR then
+                currentKind state
+                |> sprintf "Unexpected token %A"
+                |> Diagnostic
+                |> ParserState.withDiagnostic state
+            else
+                state
+            |> eat builder synKind
     builder.FinishNode()
     state
 
