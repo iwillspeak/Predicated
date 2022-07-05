@@ -183,6 +183,15 @@ and private parseNud builder state =
         | TokenKind.Gt -> infix SyntaxKind.GT
         | TokenKind.Equal -> infix SyntaxKind.EQ
         | TokenKind.Like -> infix SyntaxKind.LIKE
+        | TokenKind.OpenParen ->
+            let state =
+                state
+                |> eat builder SyntaxKind.OPEN_PAREN
+                |> parseClauseList builder [ TokenKind.EOF; TokenKind.CloseParen ]
+                |> expect builder TokenKind.CloseParen SyntaxKind.CLOSE_PAREN
+
+            builder.ApplyMark(mark, SyntaxKind.CALL |> SyntaxKinds.astToGreen)
+            state
         | _ ->
             builder.ApplyMark(mark, SyntaxKind.MATCH_ATOM |> SyntaxKinds.astToGreen)
             state

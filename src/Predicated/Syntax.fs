@@ -14,6 +14,7 @@ type public SyntaxKind =
     | OPERATOR = 4
     | BOOL = 5
     | PATH = 6
+    | CALL = 7
 
     // TOKENS
     | SPACE = 100
