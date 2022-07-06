@@ -6,13 +6,13 @@ open System
 
 let read () = ReadLine.Read(">> ")
 
-let print result =
+let print (result: ParseResponse<Query>) =
     result.Diagnostics
     |> List.iter (fun diag ->
         match diag with
         | Diagnostic message -> eprintfn "error: %s" message)
 
-    debugDump (mappedFormatter SyntaxKinds.greenToAst) result.Tree
+    debugDump (mappedFormatter SyntaxKinds.greenToAst) result.Tree.RawNode
 
 let rec repl () = read () |> parse |> print |> repl
 

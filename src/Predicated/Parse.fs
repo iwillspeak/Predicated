@@ -247,7 +247,11 @@ let private parseQueryBody builder state =
 ///
 /// Tokenises the `input` and parses it as a single query. A query can be made
 /// up of any number of clauses, potentially grouped and nested.
-let public parse input =
+/// 
+/// This API returns the raw syntax tree for the query. The `parse` method
+/// should be preferred.
+[<CompiledName("ParseRaw")>]
+let public parseRaw input =
     let tokens = input |> tokenise
     let builder = GreenNodeBuilder()
 
@@ -259,3 +263,13 @@ let public parse input =
         builder.BuildRoot(SyntaxKind.QUERY |> SyntaxKinds.astToGreen)
         |> SyntaxNode.CreateRoot
       Diagnostics = state.Diagnostics }
+
+/// Parse a Predciated Query
+/// 
+/// Tokenises the `input` and parses it as a single query. A query can be made
+/// up of any number of clauses, potentially grouped and nested. This API
+/// returns a typed query.
+[<CompiledName("Parse")>]
+let public parse input =
+    parseRaw input
+    |> ParseResponse.map (fun x -> new Query(x))

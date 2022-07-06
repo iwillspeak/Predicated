@@ -12,7 +12,7 @@ type private Event =
     | Token of SyntaxKind * string
 
 let private checkwalk text (events: Event list) =
-    let parsed = parse text
+    let parsed = parseRaw text
 
     let parsedEvents =
         Walk.walk parsed.Tree
@@ -79,7 +79,7 @@ let ``checkwalk tests`` () =
 
 [<Fact>]
 let ``syntax tree is traversable`` () =
-    let parsed = parse "hello and world"
+    let parsed = parseRaw "hello and world"
 
     match parsed.Tree with
     | Query q ->
@@ -92,8 +92,19 @@ let ``syntax tree is traversable`` () =
 
 [<Fact>]
 let ``parse simple predicate`` () =
-    let parsed = parse "document.comment_count < 100"
+    let parsed = parse "document.commentCount < 100"
 
     Assert.Empty(parsed.Diagnostics)
 
-// TODO: assert on the tree
+    Assert.Collection(parsed.Tree.Clauses,
+        (fun (x: Clause) -> 
+            Assert.Equal(ClauseKind.Compare, x.Kind)
+            let cmp = Assert.IsAssignableFrom<CompareClause>(x)
+            Assert.True(cmp.Path.IsSome)
+            Assert.Collection(cmp.Path.Value.Parts,
+                (fun x -> Assert.Equal("document", x)),
+                (fun x -> Assert.Equal("commentCount", x)))
+            // TODO: Assert on the operator and value. This means modelling out
+            //       Operator and MatchClause in the syntax tree so there is
+            //       some meaningful high-level representation to assert over.
+        ));

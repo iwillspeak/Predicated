@@ -118,6 +118,6 @@ let public tokenise input =
                 state <- next
                 lexeme <- lexeme.Append(char)
 
-        if state <> State.Start then
+        if state <> Start then
             yield tokenForState (lexeme.ToString()) state
     }

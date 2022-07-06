@@ -11,5 +11,5 @@ foreach (var token in Lex.Tokenise(input))
 }
 
 // Use the parser to get a typed tree
-var result = Predicated.Parse.parse(input);
+var result = Predicated.Parse.Parse(input);
 Console.WriteLine("GOT TREE: {0}", result.Tree);

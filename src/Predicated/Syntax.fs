@@ -31,19 +31,28 @@ type public SyntaxKind =
     | LIKE = 111
     | DOT = 112
 
+type public ClauseKind =
+    | Match = 1
+    | Compare = 2
+    | Bool = 3
+
 module SyntaxKinds =
 
     /// Convert an internal syntax kind to a raw firethorn kind
+    [<CompiledName("AstToGreen")>]
     let public astToGreen (kind: SyntaxKind) = (int) kind |> Firethorn.SyntaxKind
 
     /// Convert a firethorn kind back to a syntax kind
+    [<CompiledName("GreenToAst")>]
     let public greenToAst =
         function
         | Firethorn.SyntaxKind k -> enum<SyntaxKind> k
 
 type public SyntaxItem internal (node: SyntaxNode) =
 
-    member self.Range = node.Range
+    member _.Range = node.Range
+
+    member _.RawNode = node
 
 type public Operator internal (node: SyntaxNode) =
     inherit SyntaxItem(node)
@@ -54,17 +63,59 @@ type public Operator internal (node: SyntaxNode) =
         else
             None
 
+type public Path internal (node: SyntaxNode) =
+    inherit SyntaxItem(node)
+    
+    member public _.Parts =
+        node.ChildrenWithTokens()
+        |> Seq.choose (Firethorn.NodeOrToken.asToken)
+        |> Seq.filter (fun x -> x.Kind = (SyntaxKind.IDENT |> SyntaxKinds.astToGreen))
+        |> Seq.map (fun x -> x.Green.Text)
+
+    static member FromRaw(node: SyntaxNode) =
+        if (node.Kind |> SyntaxKinds.greenToAst) = SyntaxKind.PATH then
+            Some(Path(node))
+        else
+            None
+
+[<AbstractClass>]
 type public Clause internal (node: SyntaxNode) =
     inherit SyntaxItem(node)
+
+    abstract Kind: ClauseKind with get
 
     static member FromRaw(node: SyntaxNode) =
         match (node.Kind |> SyntaxKinds.greenToAst) with
         | SyntaxKind.BOOL -> Some(BoolClause(node) :> Clause)
         | SyntaxKind.MATCH_ATOM -> Some(MatchClause(node))
+        | SyntaxKind.COMPARE -> Some(CompareClause(node))
         | _ -> None
+
+and public CompareClause internal (node: SyntaxNode) =
+    inherit Clause(node)
+
+    override _.Kind = ClauseKind.Compare
+
+    member _.Path =
+        node.Children()
+        |> Seq.choose Path.FromRaw
+        |> Seq.tryExactlyOne
+
+    member _.Operator =
+        node.Children()
+        |> Seq.choose Operator.FromRaw
+        |> Seq.tryExactlyOne
+
+    member _.Right =
+        node.Children()
+        |> Seq.choose Clause.FromRaw
+        |> Seq.tryHead
+
 
 and public MatchClause internal (node: SyntaxNode) =
     inherit Clause(node)
+
+    override _.Kind = ClauseKind.Match
 
     static member FromRaw(node: SyntaxNode) =
         if (node.Kind |> SyntaxKinds.greenToAst) = SyntaxKind.MATCH_ATOM then
@@ -74,6 +125,8 @@ and public MatchClause internal (node: SyntaxNode) =
 
 and public BoolClause internal (node: SyntaxNode) =
     inherit Clause(node)
+
+    override _.Kind = ClauseKind.Bool
 
     member self.Left =
         node.Children()
@@ -100,7 +153,7 @@ and public BoolClause internal (node: SyntaxNode) =
 type public Query internal (node: SyntaxNode) =
     inherit SyntaxItem(node)
 
-    member self.Clauses = node.Children() |> Seq.choose Clause.FromRaw
+    member _.Clauses = node.Children() |> Seq.choose Clause.FromRaw
 
     static member FromRaw(node: SyntaxNode) =
         let kind = node.Kind |> SyntaxKinds.greenToAst
@@ -110,6 +163,7 @@ type public Query internal (node: SyntaxNode) =
         else
             None
 
+/// Active Patterns for F# Match Ergonomics
 module Patterns =
 
     let (|Bool|Match|) (clause: Clause) =
