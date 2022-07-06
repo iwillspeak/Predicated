@@ -65,7 +65,7 @@ type public Operator internal (node: SyntaxNode) =
 
 type public Path internal (node: SyntaxNode) =
     inherit SyntaxItem(node)
-    
+
     member public _.Parts =
         node.ChildrenWithTokens()
         |> Seq.choose (Firethorn.NodeOrToken.asToken)
@@ -82,7 +82,7 @@ type public Path internal (node: SyntaxNode) =
 type public Clause internal (node: SyntaxNode) =
     inherit SyntaxItem(node)
 
-    abstract Kind: ClauseKind with get
+    abstract Kind: ClauseKind
 
     static member FromRaw(node: SyntaxNode) =
         match (node.Kind |> SyntaxKinds.greenToAst) with
@@ -166,10 +166,11 @@ type public Query internal (node: SyntaxNode) =
 /// Active Patterns for F# Match Ergonomics
 module Patterns =
 
-    let (|Bool|Match|) (clause: Clause) =
-        match clause with
-        | :? BoolClause as b -> Bool b
-        | :? MatchClause as m -> Match m
-        | _ -> failwith "unexpected clause type"
+    let (|Bool|Match|Compare|) (clause: Clause) =
+        match clause.Kind with
+        | ClauseKind.Bool -> Bool(clause :?> BoolClause)
+        | ClauseKind.Match -> Match(clause :?> MatchClause)
+        | ClauseKind.Compare -> Compare(clause :?> CompareClause)
+        | _ -> failwithf "Unexpected clause kind %A" clause.Kind
 
     let (|Query|_|) node = Query.FromRaw(node)

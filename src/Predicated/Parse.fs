@@ -247,7 +247,7 @@ let private parseQueryBody builder state =
 ///
 /// Tokenises the `input` and parses it as a single query. A query can be made
 /// up of any number of clauses, potentially grouped and nested.
-/// 
+///
 /// This API returns the raw syntax tree for the query. The `parse` method
 /// should be preferred.
 [<CompiledName("ParseRaw")>]
@@ -265,7 +265,7 @@ let public parseRaw input =
       Diagnostics = state.Diagnostics }
 
 /// Parse a Predciated Query
-/// 
+///
 /// Tokenises the `input` and parses it as a single query. A query can be made
 /// up of any number of clauses, potentially grouped and nested. This API
 /// returns a typed query.

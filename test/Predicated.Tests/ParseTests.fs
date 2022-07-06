@@ -96,15 +96,20 @@ let ``parse simple predicate`` () =
 
     Assert.Empty(parsed.Diagnostics)
 
-    Assert.Collection(parsed.Tree.Clauses,
-        (fun (x: Clause) -> 
+    Assert.Collection(
+        parsed.Tree.Clauses,
+        (fun (x: Clause) ->
             Assert.Equal(ClauseKind.Compare, x.Kind)
             let cmp = Assert.IsAssignableFrom<CompareClause>(x)
             Assert.True(cmp.Path.IsSome)
-            Assert.Collection(cmp.Path.Value.Parts,
+
+            Assert.Collection(
+                cmp.Path.Value.Parts,
                 (fun x -> Assert.Equal("document", x)),
-                (fun x -> Assert.Equal("commentCount", x)))
+                (fun x -> Assert.Equal("commentCount", x))
+            )
             // TODO: Assert on the operator and value. This means modelling out
             //       Operator and MatchClause in the syntax tree so there is
             //       some meaningful high-level representation to assert over.
-        ));
+            )
+    )
