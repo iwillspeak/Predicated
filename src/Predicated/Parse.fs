@@ -15,16 +15,26 @@ type public Diagnostic = Diagnostic of string
 /// Parser responses are the result of any parse call. A parse response always
 /// returns some syntax item `Tree`, along with a list of `Diagnostics` that
 /// were emitted during the parse.
-type public ParseResponse =
-    { Tree: SyntaxNode
+type public ParseResponse<'a> =
+    { Tree: 'a
       Diagnostics: Diagnostic list }
 
 module ParseResponse =
+
+    /// Map the Syntax of a Parse Response
+    ///
+    /// Given a tree map the contents with `mapping` leaving the diagnostics
+    /// unchanged.
+    [<CompiledName("Map")>]
+    let public map mapping response =
+        { Tree = mapping response.Tree
+          Diagnostics = response.Diagnostics }
 
     /// Convert a parser response into a plain result type
     ///
     /// This drops any tree from the error, but opens up parser responses to
     /// being processed using standard error handling.
+    [<CompiledName("ToResult")>]
     let public toResult response =
         match response.Diagnostics with
         | [] -> response.Tree |> Ok
@@ -104,14 +114,15 @@ let private parseLiteral (builder: GreenNodeBuilder) state =
 
 
     let state =
-            if synKind = SyntaxKind.ERR then
-                currentKind state
-                |> sprintf "Unexpected token %A"
-                |> Diagnostic
-                |> ParserState.withDiagnostic state
-            else
-                state
-            |> eat builder synKind
+        if synKind = SyntaxKind.ERR then
+            currentKind state
+            |> sprintf "Unexpected token %A"
+            |> Diagnostic
+            |> ParserState.withDiagnostic state
+        else
+            state
+        |> eat builder synKind
+
     builder.FinishNode()
     state
 

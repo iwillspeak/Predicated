@@ -11,6 +11,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{8FF76D20-5
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Predicated.Tests", "test\Predicated.Tests\Predicated.Tests.fsproj", "{2B52F6FB-6339-47DB-97DC-051864A2C2BD}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "examples", "examples", "{8CF70CA5-2882-4EEA-9561-AF2D95879D4E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExternalApi", "examples\ExternalApi\ExternalApi.csproj", "{90AFD0E4-971D-4C8A-92FF-3CD476EE9B55}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -28,9 +32,14 @@ Global
 		{2B52F6FB-6339-47DB-97DC-051864A2C2BD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2B52F6FB-6339-47DB-97DC-051864A2C2BD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2B52F6FB-6339-47DB-97DC-051864A2C2BD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{90AFD0E4-971D-4C8A-92FF-3CD476EE9B55}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{90AFD0E4-971D-4C8A-92FF-3CD476EE9B55}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{90AFD0E4-971D-4C8A-92FF-3CD476EE9B55}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{90AFD0E4-971D-4C8A-92FF-3CD476EE9B55}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{D548A350-FC13-44B0-9A46-4BBBD0FD52D6} = {C3CA0DB9-41AA-4D87-80B4-C8E7E27A2282}
 		{2B52F6FB-6339-47DB-97DC-051864A2C2BD} = {8FF76D20-5197-47AB-8E69-F87CE9F8FA44}
+		{90AFD0E4-971D-4C8A-92FF-3CD476EE9B55} = {8CF70CA5-2882-4EEA-9561-AF2D95879D4E}
 	EndGlobalSection
 EndGlobal

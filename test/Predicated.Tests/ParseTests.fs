@@ -89,3 +89,11 @@ let ``syntax tree is traversable`` () =
         | Bool b -> printfn "Got a query with (%A %A %A)" b.Left b.Operator b.Right
         | Match m -> printfn "MATCH %A" m
     | _ -> failwith "Expected a query"
+
+[<Fact>]
+let ``parse simple predicate`` () =
+    let parsed = parse "document.comment_count < 100"
+
+    Assert.Empty(parsed.Diagnostics)
+
+// TODO: assert on the tree

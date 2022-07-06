@@ -3,9 +3,15 @@ module Predicated.Lex
 open System
 open System.Text
 
+/// Token Kind Enum
+///
+/// Represents the different types of tokens that the lexer can produce. Each
+/// token is represented as a pair of `(Kind, Lexeme)` where `Lexeme` is the raw
+/// string that was matched in the input.
 type public TokenKind =
     | Error = 0
 
+    // Plain datum tokens
     | Number = 1
     | String = 2
     | Ident = 3
@@ -13,20 +19,28 @@ type public TokenKind =
 
     | OpenParen = 5
     | CloseParen = 6
+
+    // Comparison operator tokens
     | Equal = 7
     | Like = 8
     | Gt = 9
     | Lt = 10
 
+    // Boolean grouping tokens
     | And = 11
     | Or = 12
 
     | Dot = 13
 
+    // Whitespace
     | Space = 100
     | EOF = 101
 
-type State =
+/// The tokeniser state
+///
+/// Represents each point that the tokeniser state machine can be in as it
+/// traverses the input text.
+type private State =
     | Start
     | Space
     | Ident
@@ -34,6 +48,7 @@ type State =
     | InString
     | SimpleToken of TokenKind
 
+[<CompiledName("Tokenise")>]
 let public tokenise input =
 
     let tokenForState lexeme state =

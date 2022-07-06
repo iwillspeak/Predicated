@@ -11,7 +11,7 @@
         "build",
         "/nologo",
         "/property:GenerateFullPaths=true",
-n          "/consoleloggerparameters:NoSummary"
+        "/consoleloggerparameters:NoSummary"
       ],
       "group": {
         "kind": "build",
