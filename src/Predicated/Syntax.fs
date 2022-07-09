@@ -1,6 +1,7 @@
 namespace Predicated.Syntax
 
 open Firethorn.Red
+open Firethorn
 
 /// Internal Kind for Syntax Items
 type public SyntaxKind =
@@ -31,11 +32,28 @@ type public SyntaxKind =
     | LIKE = 111
     | DOT = 112
 
+/// Type for each clause.
 type public ClauseKind =
     | Match = 1
     | Compare = 2
     | Bool = 3
 
+/// Type for atom match patterns
+type public PatternKind =
+    | String = 1
+    | Number = 2
+    | Path = 3
+
+/// Operator kinds. This includes both boolean and comparision operators.
+type public OperatorKind =
+    | GreaterThan = 1
+    | LessThan = 2
+    | Equal = 3
+    | Like = 4
+    | And = 5
+    | Or = 6
+
+/// Utilities for working with syntax kinds
 module SyntaxKinds =
 
     /// Convert an internal syntax kind to a raw firethorn kind
@@ -55,7 +73,28 @@ type public SyntaxItem internal (node: SyntaxNode) =
     member _.RawNode = node
 
 type public Operator internal (node: SyntaxNode) =
+
     inherit SyntaxItem(node)
+
+    member public _.Kind =
+        let opToken =
+            node.ChildrenWithTokens()
+            |> Seq.choose (NodeOrToken.asToken)
+            |> Seq.filter (fun x ->
+                x.Kind
+                <> (SyntaxKind.SPACE |> SyntaxKinds.astToGreen))
+            |> Seq.tryExactlyOne
+
+        opToken
+        |> Option.bind (fun x ->
+            match x.Kind |> SyntaxKinds.greenToAst with
+            | SyntaxKind.GT -> Some(OperatorKind.GreaterThan)
+            | SyntaxKind.LT -> Some(OperatorKind.LessThan)
+            | SyntaxKind.LIKE -> Some(OperatorKind.Like)
+            | SyntaxKind.EQ -> Some(OperatorKind.Equal)
+            | SyntaxKind.AND -> Some(OperatorKind.And)
+            | SyntaxKind.OR -> Some(OperatorKind.Or)
+            | _ -> None)
 
     static member FromRaw(node: SyntaxNode) =
         if (node.Kind |> SyntaxKinds.greenToAst) = SyntaxKind.OPERATOR then
@@ -63,20 +102,54 @@ type public Operator internal (node: SyntaxNode) =
         else
             None
 
-type public Path internal (node: SyntaxNode) =
-    inherit SyntaxItem(node)
+[<AbstractClass>]
+type public Pattern internal () =
+
+    abstract member Kind: PatternKind
+
+    static member FromRaw(element: NodeOrToken<SyntaxNode, SyntaxToken>) =
+        match element with
+        | Node node ->
+            PathPattern.FromRaw(node)
+            |> Option.map (fun x -> x :> Pattern)
+        | Token token ->
+            let kind = token.Kind |> SyntaxKinds.greenToAst
+
+            match kind with
+            | SyntaxKind.STRING -> Some(StringPattern(token) :> Pattern)
+            | SyntaxKind.NUMBER -> Some(NumberPattern(token))
+            | _ -> None
+
+and public PathPattern internal (node: SyntaxNode) =
+    inherit Pattern()
+
+    override _.Kind = PatternKind.Path
 
     member public _.Parts =
         node.ChildrenWithTokens()
-        |> Seq.choose (Firethorn.NodeOrToken.asToken)
+        |> Seq.choose (NodeOrToken.asToken)
         |> Seq.filter (fun x -> x.Kind = (SyntaxKind.IDENT |> SyntaxKinds.astToGreen))
         |> Seq.map (fun x -> x.Green.Text)
 
     static member FromRaw(node: SyntaxNode) =
         if (node.Kind |> SyntaxKinds.greenToAst) = SyntaxKind.PATH then
-            Some(Path(node))
+            Some(PathPattern(node))
         else
             None
+
+and public StringPattern internal (node: SyntaxToken) =
+    inherit Pattern()
+
+    override _.Kind = PatternKind.String
+
+    member _.Value = node.Green.ToString().Trim('\"')
+
+and public NumberPattern internal (node: SyntaxToken) =
+    inherit Pattern()
+
+    override _.Kind = PatternKind.Number
+
+    member _.Value = node.Green.Text |> float
 
 [<AbstractClass>]
 type public Clause internal (node: SyntaxNode) =
@@ -98,7 +171,7 @@ and public CompareClause internal (node: SyntaxNode) =
 
     member _.Path =
         node.Children()
-        |> Seq.choose Path.FromRaw
+        |> Seq.choose PathPattern.FromRaw
         |> Seq.tryExactlyOne
 
     member _.Operator =
@@ -117,6 +190,11 @@ and public MatchClause internal (node: SyntaxNode) =
 
     override _.Kind = ClauseKind.Match
 
+    member _.Pattern =
+        node.ChildrenWithTokens()
+        |> Seq.choose Pattern.FromRaw
+        |> Seq.tryHead
+
     static member FromRaw(node: SyntaxNode) =
         if (node.Kind |> SyntaxKinds.greenToAst) = SyntaxKind.MATCH_ATOM then
             Some(MatchClause(node))
@@ -128,17 +206,17 @@ and public BoolClause internal (node: SyntaxNode) =
 
     override _.Kind = ClauseKind.Bool
 
-    member self.Left =
+    member _.Left =
         node.Children()
         |> Seq.choose Clause.FromRaw
         |> Seq.tryHead
 
-    member self.Operator =
+    member _.Operator =
         node.Children()
         |> Seq.choose Operator.FromRaw
         |> Seq.tryExactlyOne
 
-    member self.Right =
+    member _.Right =
         node.Children()
         |> Seq.choose Clause.FromRaw
         |> Seq.skip 1
@@ -172,5 +250,12 @@ module Patterns =
         | ClauseKind.Match -> Match(clause :?> MatchClause)
         | ClauseKind.Compare -> Compare(clause :?> CompareClause)
         | _ -> failwithf "Unexpected clause kind %A" clause.Kind
+
+    let (|Path|Number|String|) (pattern: Pattern) = 
+        match pattern.Kind with
+        | PatternKind.Path -> Path(pattern :?> PathPattern)
+        | PatternKind.Number -> Number(pattern :?> NumberPattern)
+        | PatternKind.String -> String(pattern :?> StringPattern)
+        | _ -> failwithf "Unexpected pattern kind %A" pattern.Kind
 
     let (|Query|_|) node = Query.FromRaw(node)

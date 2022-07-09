@@ -88,6 +88,7 @@ let ``syntax tree is traversable`` () =
         match clause with
         | Bool b -> printfn "Got a query with (%A %A %A)" b.Left b.Operator b.Right
         | Match m -> printfn "MATCH %A" m
+        | Compare c -> printfn "CMP %A" c
     | _ -> failwith "Expected a query"
 
 [<Fact>]
@@ -108,8 +109,16 @@ let ``parse simple predicate`` () =
                 (fun x -> Assert.Equal("document", x)),
                 (fun x -> Assert.Equal("commentCount", x))
             )
-            // TODO: Assert on the operator and value. This means modelling out
-            //       Operator and MatchClause in the syntax tree so there is
-            //       some meaningful high-level representation to assert over.
-            )
+
+            Assert.Equal(cmp.Operator.Value.Kind, Some(OperatorKind.LessThan))
+
+            Assert.True(cmp.Right.IsSome)
+            let matchClause = Assert.IsAssignableFrom<MatchClause>(cmp.Right.Value)
+            Assert.True(matchClause.Pattern.IsSome)
+
+            let numberPattern =
+                Assert.IsAssignableFrom<NumberPattern>(matchClause.Pattern.Value)
+
+            Assert.Equal(PatternKind.Number, numberPattern.Kind)
+            Assert.Equal(100., numberPattern.Value))
     )
