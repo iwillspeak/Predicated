@@ -1,6 +1,6 @@
 # Grammar
 
-Each query is made up of a squence of clauses.
+Each query is made up of a sequence of clauses.
 
 ## Match Atom Clause
 
@@ -43,4 +43,13 @@ operation. The operators are case insensitive.
 ```
 "hello" AND "world"
 "fiz" or "buzz"
+```
+
+## Function Clause
+
+A function clause consists of an identifier followed by a parenthesised list of arguments for the function. Arguments can themselves be any clause type. Their meaning is left to the function's implementation.
+
+```
+nested(post.authors, name = "Fibble")
+same_week(post.posted_at, -2d)
 ```
