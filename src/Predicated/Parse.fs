@@ -195,12 +195,16 @@ and private parseNud builder state =
         | TokenKind.Equal -> infix SyntaxKind.EQ
         | TokenKind.Like -> infix SyntaxKind.LIKE
         | TokenKind.OpenParen ->
+
+            builder.StartNode(SyntaxKind.ARGUMENTS |> SyntaxKinds.astToGreen)
+
             let state =
                 state
                 |> eat builder SyntaxKind.OPEN_PAREN
                 |> parseClauseList builder [ TokenKind.EOF; TokenKind.CloseParen ]
                 |> expect builder TokenKind.CloseParen SyntaxKind.CLOSE_PAREN
 
+            builder.FinishNode()
             builder.ApplyMark(mark, SyntaxKind.CALL |> SyntaxKinds.astToGreen)
             state
         | _ ->

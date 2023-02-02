@@ -16,6 +16,7 @@ type public SyntaxKind =
     | BOOL = 5
     | PATH = 6
     | CALL = 7
+    | ARGUMENTS = 8
 
     // TOKENS
     | SPACE = 100
@@ -37,6 +38,7 @@ type public ClauseKind =
     | Match = 1
     | Compare = 2
     | Bool = 3
+    | Call = 4
 
 /// Type for atom match patterns
 type public PatternKind =
@@ -162,7 +164,23 @@ type public Clause internal (node: SyntaxNode) =
         | SyntaxKind.BOOL -> Some(BoolClause(node) :> Clause)
         | SyntaxKind.MATCH_ATOM -> Some(MatchClause(node))
         | SyntaxKind.COMPARE -> Some(CompareClause(node))
+        | SyntaxKind.CALL -> Some(CallClause(node))
         | _ -> None
+
+and public CallClause internal (node: SyntaxNode) =
+    inherit Clause(node)
+
+    override _.Kind = ClauseKind.Call
+
+    member _.Path =
+        node.Children()
+        |> Seq.choose PathPattern.FromRaw
+        |> Seq.tryExactlyOne
+
+    member _.Arguments =
+        node.Children()
+        |> Seq.choose Arguments.FromRaw
+        |> Seq.tryExactlyOne
 
 and public CompareClause internal (node: SyntaxNode) =
     inherit Clause(node)
@@ -225,6 +243,20 @@ and public BoolClause internal (node: SyntaxNode) =
     static member FromRaw(node: SyntaxNode) =
         if (node.Kind |> SyntaxKinds.greenToAst) = SyntaxKind.BOOL then
             Some(BoolClause(node))
+        else
+            None
+
+and public Arguments internal (node: SyntaxNode) =
+    inherit SyntaxItem(node)
+
+    member _.Clauses =
+        node.Children() |> Seq.choose (Clause.FromRaw)
+
+    static member FromRaw(node: SyntaxNode) =
+        let kind = node.Kind |> SyntaxKinds.greenToAst
+        
+        if kind = SyntaxKind.ARGUMENTS then
+            Some(Arguments(node))
         else
             None
 
