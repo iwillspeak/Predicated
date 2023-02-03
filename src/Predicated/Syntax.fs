@@ -249,12 +249,11 @@ and public BoolClause internal (node: SyntaxNode) =
 and public Arguments internal (node: SyntaxNode) =
     inherit SyntaxItem(node)
 
-    member _.Clauses =
-        node.Children() |> Seq.choose (Clause.FromRaw)
+    member _.Clauses = node.Children() |> Seq.choose (Clause.FromRaw)
 
     static member FromRaw(node: SyntaxNode) =
         let kind = node.Kind |> SyntaxKinds.greenToAst
-        
+
         if kind = SyntaxKind.ARGUMENTS then
             Some(Arguments(node))
         else
@@ -283,7 +282,7 @@ module Patterns =
         | ClauseKind.Compare -> Compare(clause :?> CompareClause)
         | _ -> failwithf "Unexpected clause kind %A" clause.Kind
 
-    let (|Path|Number|String|) (pattern: Pattern) = 
+    let (|Path|Number|String|) (pattern: Pattern) =
         match pattern.Kind with
         | PatternKind.Path -> Path(pattern :?> PathPattern)
         | PatternKind.Number -> Number(pattern :?> NumberPattern)

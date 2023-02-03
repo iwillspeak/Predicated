@@ -7,6 +7,18 @@
       "commands": [
         "fantomas"
       ]
+    },
+    "octopus.octoversion.tool": {
+      "version": "0.3.135",
+      "commands": [
+        "octoversion"
+      ]
+    },
+    "dotnet-format": {
+      "version": "5.1.250801",
+      "commands": [
+        "dotnet-format"
+      ]
     }
   }
 }
