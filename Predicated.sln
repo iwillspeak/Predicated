@@ -5,7 +5,7 @@ VisualStudioVersion = 16.0.30114.105
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{C3CA0DB9-41AA-4D87-80B4-C8E7E27A2282}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Predciated", "src\Predicated\Predciated.fsproj", "{D548A350-FC13-44B0-9A46-4BBBD0FD52D6}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Predicated", "src\Predicated\Predicated.fsproj", "{D548A350-FC13-44B0-9A46-4BBBD0FD52D6}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{8FF76D20-5197-47AB-8E69-F87CE9F8FA44}"
 EndProject
