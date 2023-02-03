@@ -28,4 +28,4 @@ dotnet pack --no-build --configuration ${BUILD_CONFIGURATION} $versionFlags --ou
 
 # Check code format. Fantomas for F#, dotnet-format for C#
 dotnet tool run fantomas --check --recurse .
-dotnet tool run dotnet-format --check
+dotnet tool run dotnet-format --check --verbosity=diagnostic
