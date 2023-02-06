@@ -88,6 +88,12 @@ let private expect (builder: GreenNodeBuilder) tokenKind syntaxKind state =
         |> Diagnostic
         |> ParserState.withDiagnostic state
 
+let private optionalComma (builder: GreenNodeBuilder) state =
+    if lookingAt TokenKind.Comma state then
+        eat builder SyntaxKind.SPACE state
+    else
+        state
+
 let private skipWs (builder: GreenNodeBuilder) state =
     if lookingAt TokenKind.Space state then
         eat builder SyntaxKind.SPACE state
@@ -233,6 +239,7 @@ and private parseClauseList builder endKinds state =
     else
         state
         |> parseTopLevelCause builder
+        |> optionalComma builder
         |> skipWs builder
         |> parseClauseList builder endKinds
 
