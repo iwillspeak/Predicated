@@ -145,7 +145,7 @@ and public StringPattern internal (node: SyntaxToken) =
     override _.Kind = PatternKind.String
 
     // FIXME: Properly cook the string here
-    member _.CookedValue = node.Green.Text.Trim('\"')
+    member _.CookedValue = node.Green.Text.Trim('\"', '\'')
 
 and public NumberPattern internal (node: SyntaxToken) =
     inherit Pattern()

@@ -31,6 +31,7 @@ type public TokenKind =
     | Or = 12
 
     | Dot = 13
+    | Comma = 7
 
     // Whitespace
     | Space = 100
@@ -45,7 +46,8 @@ type private State =
     | Space
     | Ident
     | InNumber
-    | InString
+    | InSingleString
+    | InDoubleString
     | SimpleToken of TokenKind
 
 [<CompiledName("Tokenise")>]
@@ -77,22 +79,28 @@ let public tokenise input =
             | c when Char.IsNumber(c) -> Some(InNumber)
             | c when Char.IsLetter(c) -> Some(Ident)
             | '.' -> Some(SimpleToken(TokenKind.Dot))
-            | '"' -> Some(InString)
+            | '\'' -> Some(InSingleString)
+            | '"' -> Some(InDoubleString)
             | '(' -> Some(SimpleToken(TokenKind.OpenParen))
             | ')' -> Some(SimpleToken(TokenKind.CloseParen))
             | '=' -> Some(SimpleToken(TokenKind.Equal))
             | '~' -> Some(SimpleToken(TokenKind.Like))
             | '>' -> Some(SimpleToken(TokenKind.Gt))
             | '<' -> Some(SimpleToken(TokenKind.Lt))
+            | ',' -> Some(SimpleToken(TokenKind.Comma))
             | _ -> Some(SimpleToken(TokenKind.Error))
         | InNumber ->
             match char with
             | c when Char.IsNumber(c) -> Some(State.InNumber)
             | _ -> None
-        | InString ->
+        | InDoubleString ->
             match char with
             | '"' -> Some(SimpleToken(TokenKind.String))
-            | _ -> Some(InString)
+            | _ -> Some(InDoubleString)
+        | InSingleString ->
+            match char with
+            | '\'' -> Some(SimpleToken(TokenKind.String))
+            | _ -> Some(InSingleString)
         | Space ->
             match char with
             | c when Char.IsWhiteSpace(c) -> Some(Space)

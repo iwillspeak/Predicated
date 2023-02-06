@@ -142,6 +142,24 @@ let ``parse trivial string clause`` () =
     )
 
 [<Fact>]
+let ``parse trivial string with single quotes`` () =
+    let parsed = parse "'hello world'"
+
+    Assert.Empty(parsed.Diagnostics)
+
+    Assert.Collection(
+        parsed.Tree.Clauses,
+        (fun (x: Clause) ->
+            Assert.Equal(ClauseKind.Match, x.Kind)
+            let mat = Assert.IsAssignableFrom<MatchClause>(x)
+            Assert.True(mat.Pattern.IsSome)
+
+            Assert.Equal(PatternKind.String, mat.Pattern.Value.Kind)
+            let pat = Assert.IsAssignableFrom<StringPattern>(mat.Pattern.Value)
+            Assert.Equal("hello world", pat.CookedValue))
+    )
+
+[<Fact>]
 let ``parse trivial decimal clause`` () =
     let parsed = parse "101"
 
@@ -180,4 +198,28 @@ let ``parse trivial pattern clause`` () =
                 (fun x -> Assert.Equal("document", x)),
                 (fun x -> Assert.Equal("commentCount", x))
             ))
+    )
+
+[<Fact>]
+let ``parse call with multiple parameters`` () =
+    let parsed = parse "hello(123, 456 'test')"
+
+    Assert.Empty(parsed.Diagnostics)
+    Assert.Collection(
+        parsed.Tree.Clauses,
+        (fun (x: Clause) ->
+            Assert.Equal(ClauseKind.Call, x.Kind)
+            let call = Assert.IsAssignableFrom<CallClause>(x)
+
+            Assert.True(call.Path.IsSome)            
+            Assert.Collection(call.Path.Value.Parts,
+                (fun x -> Assert.Equal("hello", x)))
+
+            Assert.True(call.Arguments.IsSome)
+            Assert.Collection(call.Arguments.Value.Clauses,
+                // TODO: Fixup these asserts
+                (fun x -> ()),
+                (fun x -> ()),
+                (fun x -> ())
+                ))
     )
