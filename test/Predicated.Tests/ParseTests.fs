@@ -120,5 +120,64 @@ let ``parse simple predicate`` () =
                 Assert.IsAssignableFrom<NumberPattern>(matchClause.Pattern.Value)
 
             Assert.Equal(PatternKind.Number, numberPattern.Kind)
-            Assert.Equal(100., numberPattern.Value))
+            Assert.Equal(100., numberPattern.DecimalValue))
+    )
+
+[<Fact>]
+let ``parse trivial string clause`` () =
+    let parsed = parse "\"hello world\""
+
+    Assert.Empty(parsed.Diagnostics)
+
+    Assert.Collection(
+        parsed.Tree.Clauses,
+        (fun (x: Clause) ->
+            Assert.Equal(ClauseKind.Match, x.Kind)
+            let mat = Assert.IsAssignableFrom<MatchClause>(x)
+            Assert.True(mat.Pattern.IsSome)
+
+            Assert.Equal(PatternKind.String, mat.Pattern.Value.Kind)
+            let pat = Assert.IsAssignableFrom<StringPattern>(mat.Pattern.Value)
+            Assert.Equal("hello world", pat.CookedValue))
+    )
+
+[<Fact>]
+let ``parse trivial decimal clause`` () =
+    let parsed = parse "101"
+
+    Assert.Empty(parsed.Diagnostics)
+
+    Assert.Collection(
+        parsed.Tree.Clauses,
+        (fun (x: Clause) ->
+            Assert.Equal(ClauseKind.Match, x.Kind)
+            let mat = Assert.IsAssignableFrom<MatchClause>(x)
+            Assert.True(mat.Pattern.IsSome)
+
+            Assert.Equal(PatternKind.Number, mat.Pattern.Value.Kind)
+            let pat = Assert.IsAssignableFrom<NumberPattern>(mat.Pattern.Value)
+            Assert.Equal(101., pat.DecimalValue))
+    )
+
+[<Fact>]
+let ``parse trivial pattern clause`` () =
+    let parsed = parse "document.commentCount"
+
+    Assert.Empty(parsed.Diagnostics)
+
+    Assert.Collection(
+        parsed.Tree.Clauses,
+        (fun (x: Clause) ->
+            Assert.Equal(ClauseKind.Match, x.Kind)
+            let mat = Assert.IsAssignableFrom<MatchClause>(x)
+            Assert.True(mat.Pattern.IsSome)
+
+            Assert.Equal(PatternKind.Path, mat.Pattern.Value.Kind)
+            let pat = Assert.IsAssignableFrom<PathPattern>(mat.Pattern.Value)
+
+            Assert.Collection(
+                pat.Parts,
+                (fun x -> Assert.Equal("document", x)),
+                (fun x -> Assert.Equal("commentCount", x))
+            ))
     )

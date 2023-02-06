@@ -4,6 +4,9 @@ open Predicated.Parse
 open Firethorn.Red.Debug
 open System
 
+// FIXME: This file should't be in the library. Split out into a test harness
+//        and make `Predicated` a proper library project.
+
 let read () = ReadLine.Read(">> ")
 
 let print (result: ParseResponse<Query>) =
