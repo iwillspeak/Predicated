@@ -144,14 +144,15 @@ and public StringPattern internal (node: SyntaxToken) =
 
     override _.Kind = PatternKind.String
 
-    member _.Value = node.Green.ToString().Trim('\"')
+    // FIXME: Properly cook the string here
+    member _.CookedValue = node.Green.Text.Trim('\"')
 
 and public NumberPattern internal (node: SyntaxToken) =
     inherit Pattern()
 
     override _.Kind = PatternKind.Number
 
-    member _.Value = node.Green.Text |> float
+    member _.DecimalValue = node.Green.Text |> float
 
 [<AbstractClass>]
 type public Clause internal (node: SyntaxNode) =
